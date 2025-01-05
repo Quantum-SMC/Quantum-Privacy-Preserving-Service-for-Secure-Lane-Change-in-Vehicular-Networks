@@ -1,3 +1,132 @@
+
+## Quantum-Privacy-Preserving-Service-for-Secure-Lane-Change-in-Vehicular-Networks
+
+In this project, we implementated a QSMC framework that assist vehicles to change the lane and exit a highway in a safe way. The communication among vehicles is secured using quantum communication technologies. Our countributions are:
+1. Integration of three advanced quantum communication technologies -QRNG, QKD, and QOKD- are deployed along with a Key Management System (KMS) to the MASCOT SMC protocol to enhance security.
+2. Implementation of a an aritmrtic circuit that corresponds to the Lane Change Service described in this [paper](https://ietresearch.onlinelibrary.wiley.com/doi/full/10.1049/qtc2.12059).
+
+## Installation
+1. Clone the QFL repository and checkout to dev branch:
+
+```
+git clone https://github.com/Quantum-SMC/QFL.git
+cd QFL
+git checkout dev
+```
+1. Run the qsmc_install.sh file in order to install the QSMC module:
+```
+qsmc_install.sh
+```
+
+1. Clone the [KMS repository](https://github.com/diogoftm/minimal-etsi-qkd-004.git) and build it as it is explained.
+
+```
+sudo apt install cmake
+sudo apt install libexplain-dev
+git clone https://github.com/diogoftm/minimal-etsi-qkd-004.git
+cd minimal-etsi-qkd-004
+cd etsi-gs-qkd-004-c
+mkdir cmake-build-dir
+cd cmake-build-dir
+cmake ..
+make
+```
+
+Generate self-signed certificates for server. In any TLS server the server needs a certificate files (private key and certificate):
+
+```
+# Generate CA
+CA_NAME_=your_name_CA # CA name
+openssl req -x509 -nodes -newkey rsa:4096 -sha256 -days 3650 -keyout $CA_NAME_.key -out $CA_NAME_.pem -subj "/CN=$CA_NAME_"
+
+# Generate certificate
+CN_=127.0.0.1  #localhost
+openssl req -new -newkey rsa:4096 -nodes -keyout $CN_.key -out $CN_.csr -subj "/CN=$CN_" -addext "subjectAltName=IP:$CN_" || openssl req -new -newkey rsa:4096 -nodes -keyout $CN_.key -out $CN_.csr -subj "/CN=$CN_" -addext "subjectAltName=DNS:$CN_"
+
+# Sign certificate with the CA
+openssl x509 -req -in $CN_.csr -CA $CA_NAME_.pem -CAkey $CA_NAME_.key -CAcreateserial -out $CN_.pem -days 3650 -sha256
+
+# Check certificate
+openssl x509 -in $CN_.pem -text -noout  # openssl x509 -in file.pem -enddate -noout 
+./server_example
+```
+Run the `server_example` and keep the terminal open as a client (QMP-SPDZ) will connect to it.
+
+```
+./server_example
+```
+
+Go to the ssl folder and run the following:
+```
+cd ..
+cd ssl
+./generate_ca_and_selfsigned_cert.sh
+```
+After generating the certificate inside the ssl directory, you need to give the path of these files to the Env.env during the next step.
+
+3. Sent environment variables in ENV.env by providing the path of certificate. The Env.env file should look as follows:
+
+```
+# Make sure to update all the variables to suit your setup
+export KEY_REQUEST_INTERFACE='004'
+
+# Both for ETSI 004
+export KMS_URI='127.0.0.1:25575'
+export SENDER_SAE_CRT='./ssl/127.0.0.1.pem'
+export SENDER_SAE_KEY='./ssl/127.0.0.1.key'
+export RECEIVER_SAE_CRT='./ssl/127.0.0.1.pem'
+export RECEIVER_SAE_KEY='./ssl/127.0.0.1.key'
+
+# Extra for ETSI 004
+export SENDER_SAE_ID='qkd//app1@aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa'
+export RECEIVER_SAE_ID='qkd//app2@bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb'
+```
+
+4. Now, set the environment variables by running:
+```
+source ENV.env
+```
+
+5. Build the MASCOT protocol:
+
+```
+make -j 8 tldr  # This command will rename OTKeys_004/ to OTKeys.
+make -j 8 mascot-party.x 
+```
+
+6. Create an IP file called players.txt. In this file the IP, base port and KMS application sae id need to be defined. For example:
+```
+# players.txt
+127.0.0.1:1234 qkd//app1@aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa - -
+127.0.0.1:1238 qkd//app2@bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb 550e8400-e29b-41d4-a716-446655440000 2
+```
+
+## How to run:
+```
+./compile.py -F 64 lane_change_service
+./mascot-party.x -N 2 -ip players.txt -I -p 0 lane_change_service
+./mascot-party.x -N 2 -ip players.txt -I -p 1 lane_change_service # in a separate terminal
+```
+For this computation just input 5 numbers separated by a space or by a new line. The first value is the flag that tells if there is an intension to exit, the other two values are the location, velocity, and the lane number.
+
+## Requirements
+- Perl
+- GMP
+- MPIR
+- OpenSSL
+- Boost
+- Matplotlib
+- Scikit-Learn
+- HDBSCAN
+
+
+ 
+
+## Credits 
+The project is based on the code of [QMP-SPDZ](https://github.com/diogoftm/QMP-SPDZ) and follows their general structure. 
+
+##QMP-SPDZ Repository
+
 # About this fork
 
 The [`master`](https://github.com/diogoftm/QMP-SPDZ/tree/master) branch is an unchanged copy of the MP-SPDZ repository.
